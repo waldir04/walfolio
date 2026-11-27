@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ ! -f package.json ]; then
+  echo "commit-msg: package.json is required before Git hooks can run." >&2
+  exit 1
+fi
+
+./node_modules/.bin/commitlint --edit "$1"

@@ -1,0 +1,176 @@
+name: CI
+
+# Pull-request and post-merge quality gate for develop and main.
+# The application lives at the repository root. Until it is scaffolded, the
+# application job is skipped; branch and commit-message checks still run.
+# Branch protection and required status checks are configured in GitHub
+# repository settings, never from this workflow. See docs/ci.md.
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  branch-name:
+    name: Branch name validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate branch name
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            branch="$HEAD_REF"
+          else
+            branch="$REF_NAME"
+          fi
+
+          if [ -z "$branch" ]; then
+            echo "::error::Could not determine the branch name for this event."
+            exit 1
+          fi
+
+          # develop and main are integration branches. They are exempt from
+          # topic-branch naming for pushes and for develop -> main pull requests.
+          if [ "$branch" = "develop" ] || [ "$branch" = "main" ]; then
+            echo "Integration branch '$branch' is exempt from topic-branch naming."
+            exit 0
+          fi
+
+          spec_pattern='^(feat|docs|fix)/[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$'
+          other_pattern='^(chore|refactor)/[a-z0-9]+(-[a-z0-9]+)*$'
+
+          if [[ "$branch" =~ $spec_pattern ]] || [[ "$branch" =~ $other_pattern ]]; then
+            echo "Branch name '$branch' is valid."
+            exit 0
+          fi
+
+          echo "::error::Invalid branch name '$branch'."
+          echo "Specification branches must match feat/NNN-slug, docs/NNN-slug, or fix/NNN-slug."
+          echo "Non-specification branches must match chore/slug or refactor/slug."
+          echo "Use lowercase kebab-case; NNN is exactly three digits."
+          exit 1
+
+  commit-messages:
+    name: Commit message validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate Conventional Commits
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+        run: bash scripts/ci/validate-commit-messages.sh
+
+  detect:
+    name: Detect application
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      present: ${{ steps.detect.outputs.present }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect root application
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+
+          if [ -f package.json ]; then
+            for file in package-lock.json .nvmrc; do
+              if [ ! -f "$file" ]; then
+                echo "::error::$file is required because package.json exists."
+                exit 1
+              fi
+            done
+
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              echo "::error::Cannot verify the application at base revision $BASE_SHA."
+              exit 1
+            fi
+
+            if git cat-file -e "$BASE_SHA:package.json" 2>/dev/null; then
+              echo "::error::package.json was removed; restore it."
+              exit 1
+            fi
+          fi
+
+          echo "present=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::Application not scaffolded; application checks are skipped."
+
+  application:
+    name: Application checks
+    needs: detect
+    if: needs.detect.outputs.present == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build

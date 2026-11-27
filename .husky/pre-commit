@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ ! -f package.json ]; then
+  echo "pre-commit: package.json is required before Git hooks can run." >&2
+  exit 1
+fi
+
+./node_modules/.bin/lint-staged

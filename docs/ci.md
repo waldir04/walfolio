@@ -6,7 +6,8 @@ architecture, adapted to a single application at the repository root.
 ## Current state
 
 The application is **not scaffolded**. There is no root `package.json`,
-`package-lock.json`, `.nvmrc`, application code, or selected Node.js version.
+`package-lock.json`, `.nvmrc`, or application code. The owner has approved Node.js 26 LTS
+(`docs/decisions/D-001-nodejs-version.md`), but it is not pinned until scaffolding begins.
 
 Therefore:
 
@@ -116,8 +117,9 @@ The following are required before application checks can run. They are **not** c
 
 ### Node.js version
 
-A Node.js version MUST be selected and pinned in a root `.nvmrc`. Do not assume Walplay's
-version. The detection job fails if `package.json` exists without `.nvmrc`.
+Node.js 26 LTS is approved (`docs/decisions/D-001-nodejs-version.md`) and MUST be pinned as `26`
+in a root `.nvmrc` when scaffolding begins. Do not assume Walplay's version. The detection job
+fails if `package.json` exists without `.nvmrc`.
 
 ### Lockfile
 

@@ -18,16 +18,17 @@ All branches MUST follow `.specify/memory/constitution.md`, Principle XIV.
 
 Spec Kit branch behavior:
 
-- Walfolio currently has no `.specify/extensions.yml` and no `speckit.git.*` commands. Therefore
-  `/speckit.specify` creates the specification directory but does not create a Git branch, and
-  `GIT_BRANCH_NAME` has no effect until a `before_specify` hook exists.
-- When the Spec Kit Git extension is installed and its hook is available, export
-  `GIT_BRANCH_NAME="<prefix>/NNN-<slug>"` before invoking `/speckit.specify` or
+- The Spec Kit Git extension is installed: `.specify/extensions.yml`, `.specify/extensions/git/`,
+  and the `/speckit.git.*` commands under `.kilo/commands/`. The `before_specify` hook can create
+  the feature branch, so `/speckit.specify` may create a Git branch.
+- Export `GIT_BRANCH_NAME="<prefix>/NNN-<slug>"` before invoking `/speckit.specify` or
   `/speckit.git.feature` so the hook uses the exact approved name.
-- Without that extension, create the specification branch directly before or alongside the
-  specification workflow:
+- If the extension or hook is unavailable, create the specification branch directly before or
+  alongside the specification workflow:
   `git checkout -b <prefix>/NNN-<slug>` for specifications, or
   `git checkout -b <prefix>/<slug>` for non-specification work.
+- The extension's optional commit hooks MUST NOT be invoked automatically. `/speckit.git.commit`
+  is a manual command and requires explicit user authorization.
 
 ## Git Commit Rules
 
@@ -43,9 +44,10 @@ Spec Kit branch behavior:
   explicitly authorizes it.
 - If a hook or check fails, fix the cause and create a new commit. Do not amend a failed commit
   unless the user explicitly requests it.
-- The `/speckit.git.commit` command is not installed in Walfolio. Do not invoke commands that do
-  not exist. If the Git extension is installed later, manual invocation MUST work independently
-  of any auto-commit configuration, and automatic commits remain prohibited.
+- The Git extension provides `/speckit.git.commit`, but it MUST be invoked manually and only after
+  explicit user authorization. Automatic commits remain prohibited. The extension configuration
+  may contain optional auto-commit entries; an agent MUST NOT invoke or rely on them on the user's
+  behalf.
 - After an authorized commit, prepare a Pull Request description following the Pull Request
   Rules. Reporting the commit hash alone does not complete the requested workflow.
 
@@ -155,12 +157,13 @@ Reviewing these documents is part of the Spec Kit workflow, not optional referen
 - Respect the MVP scope and the explicit out-of-scope list. Do not introduce functionality
   outside the MVP without identifying it as out of scope or requesting clarification.
 - Do not silently resolve deferred technology decisions. Rendering strategy, router, i18n
-  library, SSG tool, Node.js version, hosting, and deployment remain deferred until documented
-  and approved.
+  library, SSG tool, hosting, and deployment remain deferred until documented and approved.
+  Node.js 26 LTS is approved by owner decision D-001 (`docs/decisions/D-001-nodejs-version.md`).
 - Do not introduce a backend, custom API, CMS, authentication, analytics, tracking, or
   third-party measurement without explicit owner approval. These are outside the current MVP.
 - Do not introduce unapproved libraries or tools. The approved stack is React, TypeScript, Vite,
-  and Tailwind CSS v4; everything else requires a documented decision.
+  and Tailwind CSS v4, with Node.js 26 LTS for tooling; everything else requires a documented
+  decision.
 - Do not invent product features, availability, metrics, testimonials, dates, or roadmap claims.
 - Treat conditional sections and open decisions as open. For example, Video Introductions, Life
   Outside Code, contact mechanism, Spanish depth, and accessibility conformance are not approved

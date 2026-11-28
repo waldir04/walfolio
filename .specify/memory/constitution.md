@@ -255,9 +255,11 @@ The approved initial stack is:
 | Build tool | Vite |
 | Styling | Tailwind CSS v4 |
 
-- Rendering strategy, router, i18n library, SSG tool, and Node.js version are NOT approved by
-  this constitution. They remain deferred decisions and MUST be evaluated and documented before
-  adoption.
+- Rendering strategy, router, i18n library, and SSG tool are NOT approved by this constitution.
+  They remain deferred decisions and MUST be evaluated and documented before adoption.
+- Node.js 26 LTS is approved by owner decision D-001 (2026-11-28), recorded in
+  `docs/decisions/D-001-nodejs-version.md`. It MUST be pinned in `.nvmrc` when the application is
+  scaffolded. Changing the approved major line requires a new documented owner decision.
 - The stack is closed until amended. A feature specification or plan MUST NOT introduce a
   technology outside the approved stack without an explicit decision.
 - A new runtime dependency MUST be justified in writing with its need, alternatives considered,
@@ -340,7 +342,7 @@ Documentation and validation are part of the engineering standard.
 | Router | Deferred | Not selected |
 | i18n library | Deferred | Not selected |
 | SSG tool | Deferred | Not selected |
-| Node.js version | Deferred | Not selected; pin once chosen |
+| Node.js version | Approved | Node.js 26 LTS (D-001, 2026-11-28); pin major line `26` in `.nvmrc` at scaffold |
 | Hosting, deployment, previews | Deferred | Not selected |
 
 ### Design System Authority
@@ -471,7 +473,8 @@ This constitution is the authoritative source of Walfolio engineering standards.
 
 ### Deferred Decisions Register
 
-These decisions remain open. No implementation may treat them as resolved.
+These decisions remain open unless marked resolved. No implementation may treat an open decision
+as resolved. Rows marked resolved are retained for traceability and no longer block work.
 
 | ID | Decision | Current state | Blocks |
 | --- | --- | --- | --- |
@@ -491,7 +494,7 @@ These decisions remain open. No implementation may treat them as resolved.
 | DEF-14 | Router selection | Not selected | Navigation architecture |
 | DEF-15 | i18n library | Not selected | Translation implementation |
 | DEF-16 | SSG tool | Not selected | Rendering implementation |
-| DEF-17 | Node.js version | Not selected | Toolchain and CI |
+| DEF-17 | Node.js version | Resolved 2026-11-28: Node.js 26 LTS approved (D-001) | Nothing remains blocked; pin `26` in `.nvmrc` at scaffold |
 | DEF-18 | Critical modules and final coverage thresholds | Proposed | Vitest and CI configuration |
 | DEF-19 | Additional CI gates | Not approved | Lighthouse, link checking, visual regression, E2E, dependency audit |
 | DEF-20 | `AGENTS.md` operational content | Deferred by instruction | Agent conduct details |
@@ -508,4 +511,4 @@ These decisions remain open. No implementation may treat them as resolved.
 - The constitution MUST preserve decision status: approved rules are enforceable, while
   `Proposed`, `Approx.`, and `Open` items remain provisional.
 
-**Version**: 1.0.1 | **Ratified**: 2026-11-27 | **Last Amended**: 2026-11-27
+**Version**: 1.0.2 | **Ratified**: 2026-11-27 | **Last Amended**: 2026-11-28
